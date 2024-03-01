@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <readline/readline.h>
 
 #include "matr.h"
 #include "inputfuncs.h"
@@ -93,4 +94,13 @@ void free_matrix_b(Matrix_b **matr)
 {
 	free((*matr)->lines);
 	free(*matr);
+}
+
+Matrix_b *matr_b_read(FILE *fptr)
+{
+	Matrix_b *matr_b = (Matrix_b*)malloc(sizeof(Matrix_b));
+	fread(&matr_b->len, sizeof(int), 1, fptr);
+	matr_b->lines = (Line_b*)malloc(matr_b->len * sizeof(Line_b));
+	fread(matr_b->lines, sizeof(Line_b), matr_b->len, fptr);
+	return matr_b;
 }

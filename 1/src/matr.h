@@ -1,3 +1,4 @@
+#include <stdio.h>
 #ifndef MATR_H
 #define MATR_H
 typedef struct Line {
@@ -26,4 +27,5 @@ void matrout(Matrix *);
 int compare(const void *, const void *);
 void free_matrix(Matrix **);
 void free_matrix_b(Matrix_b **);
+Matrix_b *matr_b_read(FILE *);
 #endif

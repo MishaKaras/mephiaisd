@@ -8,6 +8,7 @@
 
 int bwrite_matrix(Matrix *);
 void print_vector(FILE *fptr, long offset, int arrln);
+int max_index(FILE *fptr, Matrix_b *matr_b);
 
 int main()
 {
@@ -48,66 +49,31 @@ int main()
 		
 	}
 	else if (type == 2){
-		int arrln = 0, mxsum = INT_MIN, currsum = 0, elem = 0;
-		long offset = 0;
+		int arrln = 0, elem = 0;
 		char *filename = readline("Введите название файла для чтения: ");
-		FILE *fptr = fopen(filename, "a+b");
+		FILE *fptr = fopen(filename, "rb");
 		if (fptr == NULL)
 		{
 			printf("Не удалось открыть файл.\n");
 			return 1;
 		}
-		Matrix_b *matr_b = (Matrix_b*)malloc(sizeof(Matrix_b));
-		fread(&matr_b->len, sizeof(int), 1, fptr);
-		//printf("Lines: %d\n", matr_b->len);
-		matr_b->lines = (Line_b*)malloc(matr_b->len * sizeof(Line_b));
+		Matrix_b *matr_b = matr_b_read(fptr);
+
+		index = max_index(fptr, matr_b);
 		
-		for (int i = 0; i < matr_b->len; ++i)
-		{
-			fread(&matr_b->lines[i].len, sizeof(int), 1, fptr);
-			//printf("Len of line [%d]: %d\n", i, matr_b->lines[i].len);
-			fread(&matr_b->lines[i].offset, sizeof(long), 1, fptr);
-			//printf("Offset of line [%d]: %ld\n", i, matr_b->lines[i].offset);
-		}
-		
-		for (int i = 0; i < matr_b->len; ++i)
-		{
-			currsum = 0;
-			arrln = matr_b->lines[i].len;
-			fseek(fptr, matr_b->lines[i].offset, SEEK_SET);
-			//printf("Line-[%d] len: %d\n", i, arrln);
-			for (int j = 0; j < arrln; ++j)
-			{
-				fread(&elem, sizeof(int), 1, fptr);
-				//printf("elem[%d][%d]: %d\n", i, j, elem);
-				currsum += elem;
-				//printf("Curr position: %ld\n", ftell(fptr));		
-			}
-			if (currsum > mxsum)
-			{
-				mxsum = currsum;
-				index = i;
-			}
-		}
-		//printf("Offset: %ld\n", offset);
-		//printf("mxsum: %d\n", mxsum);
-		fseek(fptr, 0, SEEK_END);
-		long res_offset = ftell(fptr);
 		arrln = matr_b->lines[index].len;
 		int catchid = 0, currmin = INT_MAX, previd = -1, prevmin = INT_MIN;
-		//printf("Offset: %ld\n", matr_b->lines[index].offset);
-		//printf("Arrln: %d\n", matr_b->lines[index].len);
-
-		//Запись вектора 1
-		offset = sizeof(int) + matr_b->len * (sizeof(int) + sizeof(long));
-		fseek(fptr, offset, SEEK_SET);
-		fwrite(&arrln, sizeof(int), 1, fptr);
-		fwrite(&res_offset, sizeof(long), 1, fptr);
 
 
-		//Запись вектора 2
-		//fseek(fptr, 0, SEEK_END);
-		//fwrite(&arrln, sizeof(int), 1, fptr);
+		char *filename_w = readline("Введите название файла для записи результата: ");
+		FILE *fptr_w = fopen(filename_w, "w+b");
+		if (fptr_w == NULL)
+		{
+			printf("Не удалось открыть файл.\n");
+			return 1;
+		}
+		fwrite(&arrln, sizeof(int), 1, fptr_w);
+
 		for (int j = 0; j < arrln; ++j) {
 			fseek(fptr, matr_b->lines[index].offset, SEEK_SET);
 			for (int i = 0; i < arrln; ++i)
@@ -122,17 +88,19 @@ int main()
 					}
 				}
 			}
-			//printf("Elem [%d]: %d\n", j, currmin);
-			fseek(fptr, 0, SEEK_END);
-			fwrite(&currmin, sizeof(int), 1, fptr);
+			printf("Elem [%d]: %d\n", j, currmin);
+			fwrite(&currmin, sizeof(int), 1, fptr_w);
 			prevmin = currmin;
 			previd = catchid;
 			currmin = INT_MAX;
 		}
-		offset = -1 * sizeof(int) * arrln;
-		print_vector(fptr, offset, arrln);
 		fclose(fptr);
 		free(filename);
+		
+		print_vector(fptr_w, sizeof(int), arrln);
+		fclose(fptr_w);
+		free(filename_w);
+		
 		free_matrix_b(&matr_b);
 	}
 	else
@@ -159,19 +127,21 @@ int bwrite_matrix(Matrix *matr)
 		return 1;
 	}
 	fwrite(&(matr->len), sizeof(int), 1, fptr_w);
-	long offset = sizeof(int) + matr->len * (sizeof(int) + sizeof(long));
+	long offset = sizeof(int) + matr->len * sizeof(Line_b);
+	Line_b *w_line = (Line_b*)malloc(sizeof(Line_b));
 	for (int i = 0; i < matr->len; ++i)
 	{
-		fwrite(&(matr->lines[i].len), sizeof(int), 1, fptr_w);
-		fwrite(&(offset), sizeof(long), 1, fptr_w);
+		w_line->len = matr->lines[i].len;
+		w_line->offset = offset;
+		fwrite(w_line, sizeof(Line_b), 1, fptr_w);
 		offset += matr->lines[i].len * sizeof(int);	
 	}
+	free(w_line);
 	
 	for (int i = 0; i < matr->len; ++i)
 	{
 		for (int j = 0; j < matr->lines[i].len; ++j)
 		{
-			//printf("writing elem [%d][%d]: %d\n", i, j, *(matr->lines[i].arr + j));
 			fwrite(matr->lines[i].arr + j, sizeof(int), 1, fptr_w);
 		}
 	}
@@ -183,7 +153,7 @@ int bwrite_matrix(Matrix *matr)
 void print_vector(FILE *fptr, long offset, int arrln)
 {
 	int elem = 0;
-	fseek(fptr, offset, SEEK_END);
+	fseek(fptr, offset, SEEK_SET);
 	printf("Результирующий вектор: \n");
 	for (int i = 0; i < arrln; ++i)
 	{
@@ -191,4 +161,26 @@ void print_vector(FILE *fptr, long offset, int arrln)
 		printf("%d ", elem);
 	}
 	printf("\n");
+}
+
+int max_index(FILE *fptr, Matrix_b *matr_b)
+{
+	int currsum = 0, arrln = 0, elem = 0, mxsum = INT_MIN, index = -1;
+	for (int i = 0; i < matr_b->len; ++i)
+	{
+		currsum = 0;
+		arrln = matr_b->lines[i].len;
+		fseek(fptr, matr_b->lines[i].offset, SEEK_SET);
+		for (int j = 0; j < arrln; ++j)
+		{
+			fread(&elem, sizeof(int), 1, fptr);
+			currsum += elem;
+		}
+		if (currsum > mxsum)
+		{
+			mxsum = currsum;
+			index = i;
+		}
+	}
+	return index;
 }
