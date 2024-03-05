@@ -7,7 +7,6 @@
 #include "inputfuncs.h"
 
 int bwrite_matrix(Matrix *);
-void print_vector(FILE *fptr, long offset, int arrln);
 int max_index(FILE *fptr, Matrix_b *matr_b);
 
 int main()
@@ -72,8 +71,14 @@ int main()
 			printf("Не удалось открыть файл.\n");
 			return 1;
 		}
-		fwrite(&arrln, sizeof(int), 1, fptr_w);
-
+		int vec_ln = 1;
+		long vec_offset = sizeof(int) + sizeof(Line_b);
+		fwrite(&vec_ln, sizeof(int), 1, fptr_w);
+		Line_b *vec = (Line_b*)calloc(1, sizeof(Line_b));
+		vec->len = arrln;
+		vec->offset = vec_offset;
+		fwrite(vec, sizeof(Line_b), 1, fptr_w);
+				
 		for (int j = 0; j < arrln; ++j) {
 			fseek(fptr, matr_b->lines[index].offset, SEEK_SET);
 			for (int i = 0; i < arrln; ++i)
@@ -88,19 +93,19 @@ int main()
 					}
 				}
 			}
-			printf("Elem [%d]: %d\n", j, currmin);
+			printf("%d ", currmin);
 			fwrite(&currmin, sizeof(int), 1, fptr_w);
 			prevmin = currmin;
 			previd = catchid;
 			currmin = INT_MAX;
 		}
+		printf("\n");
 		fclose(fptr);
 		free(filename);
 		
-		print_vector(fptr_w, sizeof(int), arrln);
 		fclose(fptr_w);
 		free(filename_w);
-		
+		free(vec);
 		free_matrix_b(&matr_b);
 	}
 	else
@@ -128,13 +133,13 @@ int bwrite_matrix(Matrix *matr)
 	}
 	fwrite(&(matr->len), sizeof(int), 1, fptr_w);
 	long offset = sizeof(int) + matr->len * sizeof(Line_b);
-	Line_b *w_line = (Line_b*)malloc(sizeof(Line_b));
+	Line_b *w_line = (Line_b*)calloc(1, sizeof(Line_b));
 	for (int i = 0; i < matr->len; ++i)
 	{
 		w_line->len = matr->lines[i].len;
 		w_line->offset = offset;
 		fwrite(w_line, sizeof(Line_b), 1, fptr_w);
-		offset += matr->lines[i].len * sizeof(int);	
+		offset += matr->lines[i].len * sizeof(int);
 	}
 	free(w_line);
 	
@@ -148,19 +153,6 @@ int bwrite_matrix(Matrix *matr)
 	fclose(fptr_w);
 	free(filename_w);
 	return 0;
-}
-
-void print_vector(FILE *fptr, long offset, int arrln)
-{
-	int elem = 0;
-	fseek(fptr, offset, SEEK_SET);
-	printf("Результирующий вектор: \n");
-	for (int i = 0; i < arrln; ++i)
-	{
-		fread(&elem, sizeof(int), 1, fptr);
-		printf("%d ", elem);
-	}
-	printf("\n");
 }
 
 int max_index(FILE *fptr, Matrix_b *matr_b)
