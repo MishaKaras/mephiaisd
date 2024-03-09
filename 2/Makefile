@@ -41,7 +41,10 @@ OBJ2 = $(patsubst $(PREF_SRC)%.c, $(PREF_OBJ)%.o, $(SRCL))
 
 $(TARGET) : $(LIBR) $(OBJ)
 	$(CC) -o $(TARGET) $(OBJ)  -L. $(LFLAGS)
-	rm $(PREF_OBJ)*.o $(LIBR)
+	rm $(PREF_OBJ)*.o
+ifeq ($(LIB), stat)
+	rm $(LIBR)
+endif
 
 $(PREF_OBJ)%.o : $(PREF_SRC)%.c
 ifeq ($(LIB), stat)
