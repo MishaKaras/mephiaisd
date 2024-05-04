@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <graphviz/gvc.h>
 #ifndef BINTREE_H
 #define BINTREE_H
 typedef struct Node
@@ -28,4 +29,6 @@ int clear(Tree *);
 Tree *create();
 int import(FILE *, Tree *);
 int dop(char *, char *, Tree *);
+int addNode(Node *, Agraph_t *);
+int visual(Tree *, char *);
 #endif

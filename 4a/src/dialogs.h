@@ -10,4 +10,5 @@ int D_find(Tree *);
 int D_output(Tree *);
 int D_import(Tree *);
 int D_dop(Tree *);
+int D_graphviz(Tree *);
 #endif

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <readline/readline.h>
+#include <graphviz/gvc.h>
 #include "bintree.h"
 #include "inputfuncs.h"
 
@@ -395,5 +396,60 @@ int dop(char *input_name, char *output_name, Tree *tree)
 
 	write_dop(tree, fptr_w);
 	fclose(fptr_w);
+	return 0;
+}
+
+int visual(Tree *tree, char *filename)
+{
+	if (tree == NULL || tree->root == NULL)
+		return -1;
+	
+	GVC_t *gvc = gvContext();
+	Agraph_t *g = agopen("BST", Agdirected, 0);
+	addNode(tree->root, g);
+
+	gvLayout(gvc, g, "dot");
+	gvRenderFilename(gvc, g, "svg", filename);
+	
+	gvFreeLayout(gvc, g);
+	agclose(g);
+	gvFreeContext(gvc);
+	return 0;
+}
+
+int addNode(Node *ptr, Agraph_t *g)
+{
+	if (ptr == NULL)
+		return 0;
+	
+	char name[500];
+	sprintf(name, "%s-%lu", ptr->key, ptr->info);
+	Agnode_t *g_ptr = agnode(g, name, 1);
+	
+	if (ptr->next != NULL)
+	{
+		char next_name[500];
+		sprintf(next_name, "%s-%lu", (ptr->next)->key, (ptr->next)->info);
+		Agnode_t *g_next = agnode(g, next_name, 1);
+		Agedge_t *n_edge = agedge(g, g_ptr, g_next, 0, 1);
+		agsafeset(n_edge, "style", "dashed", "");
+	}
+	
+	if (ptr->left != NULL)
+	{
+		char l_name[500];
+		sprintf(l_name, "%s-%lu", (ptr->left)->key, (ptr->left)->info);
+		Agnode_t *g_left = agnode(g, l_name, 1);
+		/*Agedge_t *l_edge = */agedge(g, g_ptr, g_left, 0, 1);
+		addNode(ptr->left, g); 
+	}
+	if (ptr->right != NULL)
+	{
+		char r_name[500];
+		sprintf(r_name, "%s-%lu", (ptr->right)->key, (ptr->right)->info);
+		Agnode_t *g_right = agnode(g, r_name, 1);
+		/*Agedge_t *r_edge = */agedge(g, g_ptr, g_right, 0, 1);
+		addNode(ptr->right, g); 
+	}
 	return 0;
 }

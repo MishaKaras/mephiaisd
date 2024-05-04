@@ -180,3 +180,13 @@ int D_dop(Tree *tree)
 	free(out_name);
 	return 0;
 }
+
+int D_graphviz(Tree *tree)
+{
+	char *filename = readline("Введите название svg-файла для сохранения графа: ");
+	int stat = visual(tree, filename);
+	if (stat < 0)
+		errors(stat);
+	free(filename);
+	return 0;
+}
