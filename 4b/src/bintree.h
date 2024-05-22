@@ -10,9 +10,8 @@ typedef struct Node
 	struct Node *left;
 	struct Node *right;
 	struct Node *parent;
-	//size_t height;
 	int depth;
-	//struct Node *sibling;
+	int size;
 } Node;
 
 typedef struct Tree

@@ -20,10 +20,10 @@ int main()
 
 	FILE *fptr = fopen("insert.txt", "a");
 	printf("Вставка\n");
-	for (int size = 100000; size < 3000001; size += 145000)
+	for (int size = 10000; size < 100001; size += 10000)
 	{
 		av_insert = 0.0;
-		//printf("size >> %d\n", size);
+		printf("size >> %d\n", size);
 		for (int i = 0; i < 10; ++i)
 		{
 			set_tree(tree, size);
@@ -89,7 +89,7 @@ int set_tree(Tree *tree, int size)
 {
 	for (int i = 0; i < size; ++i)
 	{
-		size_t key = (size_t)rand();
+		size_t key = (size_t)rand() % 10000000;
 		char *info = calloc(2, sizeof(char));
 		info[0] = 'a';
 		insert(tree, key, info);

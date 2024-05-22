@@ -11,11 +11,13 @@
 Node *find_prev(Tree *, Node *);
 Node *rebalance(Node *);
 int store_inorder(Node *, Node **, int);
-Node *balanced_subtree(Node **, int, int, int);
+Node *balanced_subtree(Node **, int, int, int, int);
 int node_clear(Node *);
 int clear_info_array(Node *);
 int copy_info_array(Node *, Node *);
 char *infos_in_str(Node *);
+void inc_sizes(Node *);
+void dec_sizes(Node *);
 
 // Node *first(Tree *tree)
 // {
@@ -124,6 +126,7 @@ Node *new_node(const size_t key, const char *info)
 	new->info_size = 1;
 	new->info_arr = (char **)calloc(1, sizeof(char *));
 	new->info_arr[0] = strdup(info);
+	new->size = 1;
 	return new;
 }
 
@@ -190,10 +193,11 @@ Node *find_parent(Tree *tree, const size_t key, int *depth)
 
 Node *rebalance(Node *scapegoat)
 {
-	int goat_size = n_size(scapegoat);
+	int goat_size = scapegoat->size;
+	//int goat_size = n_size(scapegoat);
 	Node *inorder[goat_size];
 	store_inorder(scapegoat, inorder, 0);
-	Node *balanced = balanced_subtree(inorder, 0, goat_size - 1, scapegoat->depth);
+	Node *balanced = balanced_subtree(inorder, 0, goat_size - 1, scapegoat->depth, goat_size);
 	return balanced;
 }
 
@@ -206,21 +210,22 @@ int store_inorder(Node *ptr, Node **arr, int index)
 	return store_inorder(ptr->right, arr, index);
 }
 
-Node *balanced_subtree(Node **inorder, int start, int end, int depth) 
+Node *balanced_subtree(Node **inorder, int start, int end, int depth, int curr_size) 
 {
 	if (start > end)
 		return NULL;
 	int mid = (start + end) / 2;
 	Node *ptr = inorder[mid];
-	ptr->left = balanced_subtree(inorder, start, mid - 1, depth + 1);
+	ptr->left = balanced_subtree(inorder, start, mid - 1, depth + 1, curr_size / 2);
 	if (ptr->left != NULL)
 		ptr->left->parent = ptr;
 	
-	ptr->right = balanced_subtree(inorder, mid + 1, end, depth + 1);
+	ptr->right = balanced_subtree(inorder, mid + 1, end, depth + 1, curr_size / 2);
 	if (ptr->right != NULL)
 		ptr->right->parent = ptr;
 	
 	ptr->depth = depth;
+	ptr->size = curr_size;
 	return ptr;
 }
 
@@ -284,7 +289,27 @@ Node *b_insert(Tree *tree, const size_t key, const char *info)
 		new->parent = par;
 	}
 	new->depth = depth;
+	if (new != tree->root)
+		inc_sizes(new->parent);
 	return new;
+}
+
+void inc_sizes(Node *ptr)
+{
+	while (ptr != NULL)
+	{
+		ptr->size++;
+		ptr = ptr->parent;
+	}
+}
+
+void dec_sizes(Node *ptr)
+{
+	while (ptr != NULL)
+	{
+		ptr->size--;
+		ptr = ptr->parent;
+	}
 }
 
 Node *scapegoat(Tree *tree, Node *ptr)
@@ -295,9 +320,17 @@ Node *scapegoat(Tree *tree, Node *ptr)
 	while (par != NULL)
 	{
 		if (ptr == par->right)
-			sib_size = n_size(ptr->parent->left);
+			if (par->left != NULL)
+				sib_size = par->left->size;
+			else
+				sib_size = 0;
+			//sib_size = n_size(par->left);
 		else
-			sib_size = n_size(ptr->parent->right);
+			if (par->right != NULL)
+				sib_size = par->right->size;
+			else
+				sib_size = 0;
+			//sib_size = n_size(par->right);
 		par_size = 1 + size + sib_size;
 		if (size > (tree->alpha) * par_size || sib_size > (tree->alpha) * par_size)
 			return par;
@@ -314,18 +347,6 @@ int n_size(Node *ptr)
 		return 0;
 	return 1 + n_size(ptr->left) + n_size(ptr->right);
 }
-
-
-
-// Node *find_prev(Tree *tree, Node *curr_node)
-// {
-// 	Node *prev = first(tree);
-// 	if (prev == curr_node)
-// 		return NULL;
-// 	while (prev->next != NULL && prev->next != curr_node)
-// 		prev = prev->next;
-// 	return prev;
-// }
 
 int delete(Tree *tree, const size_t key)
 {
@@ -360,7 +381,7 @@ int b_delete(Tree *tree, const size_t del_key)
 	{
 		real_del = minimum(del_node->right);
 	}
-	
+	dec_sizes(real_del->parent);
 	if (real_del->right != NULL)
 		subtree = real_del->right;
 	else
@@ -383,6 +404,7 @@ int b_delete(Tree *tree, const size_t del_key)
 		copy_info_array(real_del, del_node);
 		del_node->key = real_del->key;
 	}
+	//dec_sizes(real_del->parent);
 	node_clear(real_del);
 	return 0;
 }
