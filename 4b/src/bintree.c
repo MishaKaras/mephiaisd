@@ -75,7 +75,7 @@ int traverse_rec(Node *ptr)
 
 int output_node(Node *ptr)
 {
-	printf("Key >> %5lu:\n", ptr->key);
+	printf("Key >> %5lu\n", ptr->key);
 	for (int i = 0; i < ptr->info_size; ++i)
 		printf("\t%7s\n", (ptr->info_arr)[i]);
 	return 0;
@@ -137,7 +137,7 @@ Node *find_parent(Tree *tree, const size_t key, int *depth)
 	int stat = 0;
 	while (ptr != NULL)
 	{
-		stat = key - ptr->key;
+		stat = (int)key - (int)(ptr->key);
 		par = ptr;
 		if (stat < 0)
 			ptr = ptr->left;
@@ -233,9 +233,12 @@ int insert(Tree *tree, const size_t key, const char *info)
 {
 	if (tree == NULL)
 		return -1;		// Не выделена память под дерево
+	//printf("Начало поиска\n");
 	Node *found = find_key(tree, key);
+	//printf("конец поиска\n");
 	if (found != NULL)
 	{
+		//printf("Дубликат\n");
 		found->info_size++;
 		char **new_arr = (char **)realloc(found->info_arr, found->info_size * sizeof(char *));
 		if (new_arr != NULL)
@@ -246,23 +249,30 @@ int insert(Tree *tree, const size_t key, const char *info)
 		return 0;
 	}
 	Node *inserted = b_insert(tree, key, info);
+	//printf("Вставлен бинарно\n");
 	tree->size++;
 	if (tree->maxSize < tree->size)
 		tree->maxSize = tree->size;
 	
 	if (inserted->depth > (int)(log(tree->size) / log(1 / tree->alpha)))
 	{
+		//printf("Перебалансировка\n");
 		Node *goat = scapegoat(tree, inserted);
 		Node *par = goat->parent;
+		Node *res = rebalance(goat);
+		res->parent = NULL;
 		if (par != NULL)
 		{
 			if (goat == par->right)
-				par->right = rebalance(goat);
+				par->right = res;
 			else
-				par->left = rebalance(goat);
+				par->left = res;
+			res->parent = par;
 		}
 		else
-			tree->root = rebalance(goat);
+			tree->root = res;
+
+		//printf("Конец перебалансировки\n");
 	}
 	return 0;
 }

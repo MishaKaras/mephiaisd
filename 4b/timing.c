@@ -13,20 +13,21 @@ double find_time(Tree *tree);
 int main()
 {
 	srand(time(NULL));
-	double alpha = 0.6;
+	double alpha = 0.7;
 	Tree *tree = create(alpha);
 	double av_insert = 0.0, av_delete = 0.0, av_find = 0.0;
 	double res = 0.0;
 
 	FILE *fptr = fopen("insert.txt", "a");
 	printf("Вставка\n");
-	for (int size = 10000; size < 100001; size += 10000)
+	for (int size = 1000; size < 10001; size += 1000)
 	{
 		av_insert = 0.0;
 		printf("size >> %d\n", size);
 		for (int i = 0; i < 10; ++i)
 		{
 			set_tree(tree, size);
+			printf("Дерево сгенерировано\n");
 			res = insert_time(tree);
 			av_insert += res;
 			printf("insert-%d %lf\n", i+1, res);
@@ -89,10 +90,12 @@ int set_tree(Tree *tree, int size)
 {
 	for (int i = 0; i < size; ++i)
 	{
-		size_t key = (size_t)rand() % 10000000;
-		char *info = calloc(2, sizeof(char));
+		size_t key = (size_t)(rand() % 10000);
+		char *info = (char *)calloc(2, sizeof(char));
 		info[0] = 'a';
 		insert(tree, key, info);
+		free(info);
+		//printf("%d) Элемент вставлен\n", i);
 	}
 	return 0;
 }
@@ -115,14 +118,14 @@ double insert_time(Tree *tree)
 	struct timespec start, end;
 	for (int i = 0; i < 500; ++i)
 	{
-		size_t key = (size_t)rand();
+		size_t key = (size_t)(rand() % 100000);
 		char *info = calloc(2, sizeof(char));
 		info[0] = 'b';
 
 		clock_gettime(CLOCK_REALTIME, &start);
 		insert(tree, key, info);
 		clock_gettime(CLOCK_REALTIME, &end);
-
+		free(info);
 		total_time += (1000000000*(end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec));
 	}
 	return total_time / 500;
