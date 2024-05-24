@@ -6,8 +6,6 @@
 #include "bintree.h"
 #include "inputfuncs.h"
 
-//#define ALPHA 0.75
-
 Node *find_prev(Tree *, Node *);
 Node *rebalance(Node *);
 int store_inorder(Node *, Node **, int);
@@ -16,52 +14,7 @@ int node_clear(Node *);
 int clear_info_array(Node *);
 int copy_info_array(Node *, Node *);
 char *infos_in_str(Node *);
-void inc_sizes(Node *);
-void dec_sizes(Node *);
 
-// Node *first(Tree *tree)
-// {
-// 	if (tree == NULL)
-// 		return NULL;
-// 	Node *ptr = tree->root;
-// 	while (ptr->left != NULL)
-// 		ptr = ptr->left;
-// 	return ptr;
-// }
-
-/*int traverse(Tree *tree)
-{
-	printf("\t   Key   |  Info  \n");
-	if (tree == NULL || tree->root == NULL)
-		return -1;
-	Node *ptr = tree->root;
-	while (ptr != NULL)
-	{
-		if (ptr->left != NULL)
-		{
-			ptr = ptr->left;
-			continue;
-		}
-		printf("\t%8lu | %7s\n", ptr->key, ptr->info);
-		if (ptr->right != NULL)
-		{
-			ptr = ptr->right;
-			continue;
-		}
-		ptr = find_next(ptr);
-		while(ptr != NULL && ptr->right == NULL)
-		{
-			printf("\t%8lu | %7s\n", ptr->key, ptr->info);
-			ptr = find_next(ptr);
-		}
-		if (ptr != NULL)
-		{
-			printf("\t%8lu | %7s\n", ptr->key, ptr->info);
-			ptr = ptr->right;
-		}
-	}
-	return 0;
-}*/
 
 int traverse_rec(Node *ptr)
 {
@@ -126,7 +79,6 @@ Node *new_node(const size_t key, const char *info)
 	new->info_size = 1;
 	new->info_arr = (char **)calloc(1, sizeof(char *));
 	new->info_arr[0] = strdup(info);
-	new->size = 1;
 	return new;
 }
 
@@ -150,11 +102,10 @@ Node *find_parent(Tree *tree, const size_t key, int *depth)
 
 Node *rebalance(Node *scapegoat)
 {
-	//int goat_size = scapegoat->size;
 	int goat_size = n_size(scapegoat);
 	Node *inorder[goat_size];
 	store_inorder(scapegoat, inorder, 0);
-	Node *balanced = balanced_subtree(inorder, 0, goat_size - 1, scapegoat->depth/*, goat_size*/);
+	Node *balanced = balanced_subtree(inorder, 0, goat_size - 1, scapegoat->depth);
 	return balanced;
 }
 
@@ -167,22 +118,21 @@ int store_inorder(Node *ptr, Node **arr, int index)
 	return store_inorder(ptr->right, arr, index);
 }
 
-Node *balanced_subtree(Node **inorder, int start, int end, int depth/*, int curr_size*/) 
+Node *balanced_subtree(Node **inorder, int start, int end, int depth) 
 {
 	if (start > end)
 		return NULL;
 	int mid = (start + end) / 2;
 	Node *ptr = inorder[mid];
-	ptr->left = balanced_subtree(inorder, start, mid - 1, depth + 1/*, curr_size / 2*/);
+	ptr->left = balanced_subtree(inorder, start, mid - 1, depth + 1);
 	if (ptr->left != NULL)
 		ptr->left->parent = ptr;
 	
-	ptr->right = balanced_subtree(inorder, mid + 1, end, depth + 1/*, curr_size / 2*/);
+	ptr->right = balanced_subtree(inorder, mid + 1, end, depth + 1);
 	if (ptr->right != NULL)
 		ptr->right->parent = ptr;
 	
 	ptr->depth = depth;
-	// ptr->size = curr_size;
 	return ptr;
 }
 
@@ -190,12 +140,9 @@ int insert(Tree *tree, const size_t key, const char *info)
 {
 	if (tree == NULL)
 		return -1;		// Не выделена память под дерево
-	//printf("Начало поиска\n");
 	Node *found = find_key(tree, key);
-	//printf("конец поиска\n");
 	if (found != NULL)
 	{
-		//printf("Дубликат\n");
 		found->info_size++;
 		char **new_arr = (char **)realloc(found->info_arr, found->info_size * sizeof(char *));
 		if (new_arr != NULL)
@@ -206,14 +153,12 @@ int insert(Tree *tree, const size_t key, const char *info)
 		return 0;
 	}
 	Node *inserted = b_insert(tree, key, info);
-	//printf("Вставлен бинарно\n");
 	tree->size++;
 	if (tree->maxSize < tree->size)
 		tree->maxSize = tree->size;
 	
 	if (inserted->depth > (int)(log(tree->size) / log(1 / tree->alpha)))
 	{
-		//printf("Перебалансировка\n");
 		Node *goat = scapegoat(tree, inserted);
 		Node *par = goat->parent;
 		Node *res = rebalance(goat);
@@ -229,7 +174,6 @@ int insert(Tree *tree, const size_t key, const char *info)
 		else
 			tree->root = res;
 
-		//printf("Конец перебалансировки\n");
 	}
 	return 0;
 }
@@ -256,27 +200,7 @@ Node *b_insert(Tree *tree, const size_t key, const char *info)
 		new->parent = par;
 	}
 	new->depth = depth;
-	// if (new != tree->root)
-	// 	inc_sizes(new->parent);
 	return new;
-}
-
-void inc_sizes(Node *ptr)
-{
-	while (ptr != NULL)
-	{
-		ptr->size++;
-		ptr = ptr->parent;
-	}
-}
-
-void dec_sizes(Node *ptr)
-{
-	while (ptr != NULL)
-	{
-		ptr->size--;
-		ptr = ptr->parent;
-	}
 }
 
 Node *scapegoat(Tree *tree, Node *ptr)
@@ -288,16 +212,14 @@ Node *scapegoat(Tree *tree, Node *ptr)
 	{
 		if (ptr == par->right)
 			if (par->left != NULL)
-				sib_size = n_size(par->left)/*->size*/;
+				sib_size = n_size(par->left);
 			else
 				sib_size = 0;
-			//sib_size = n_size(par->left);
 		else
 			if (par->right != NULL)
-				sib_size = n_size(par->right)/*->size*/;
+				sib_size = n_size(par->right);
 			else
 				sib_size = 0;
-			//sib_size = n_size(par->right);
 		par_size = 1 + size + sib_size;
 		if (size > (tree->alpha) * par_size || sib_size > (tree->alpha) * par_size)
 			return par;
@@ -348,7 +270,6 @@ int b_delete(Tree *tree, const size_t del_key)
 	{
 		real_del = minimum(del_node->right);
 	}
-	//dec_sizes(real_del->parent);
 	if (real_del->right != NULL)
 		subtree = real_del->right;
 	else
@@ -371,7 +292,6 @@ int b_delete(Tree *tree, const size_t del_key)
 		copy_info_array(real_del, del_node);
 		del_node->key = real_del->key;
 	}
-	//dec_sizes(real_del->parent);
 	node_clear(real_del);
 	return 0;
 }
@@ -394,42 +314,6 @@ int copy_info_array(Node *src, Node *targ)
 	return 0;
 	
 }
-// F_nodes find_key_old(Tree *tree, const size_t f_key)
-// {
-// 	F_nodes res;
-// 	res.head = NULL;
-// 	if (tree == NULL)
-// 		return res;
-	
-// 	F_item *tail = NULL;
-// 	Node *ptr = tree->root;
-// 	while (ptr != NULL)
-// 	{
-// 		if (f_key == ptr->key)
-// 		{
-// 			F_item *new = calloc(1, sizeof(F_item));
-// 			new->ptr = ptr;
-// 			new->next = NULL;
-// 			if (res.head == NULL)
-// 			{
-// 				res.head = new;
-// 				tail = res.head;
-// 			}
-// 			else
-// 			{
-// 				tail->next = new;
-// 				tail = new;
-// 			}
-
-// 			ptr = ptr->right;
-// 		}
-// 		else if (f_key < ptr->key)
-// 			ptr = ptr->left;
-// 		else
-// 			ptr = ptr->right;
-// 	}
-// 	return res;
-// }
 
 Node *find_key(Tree *tree, const size_t f_key)
 {
@@ -528,7 +412,6 @@ int import(FILE *fptr, Tree *tree)
 			tree->root = NULL;
 			return -5;		// Ошибка чтения числа из файла
 		}
-		//printf("Key: %lu", key);
 		char *info = txt_readline(fptr);
 		if (info == NULL)
 		{
@@ -538,110 +421,12 @@ int import(FILE *fptr, Tree *tree)
 			tree->root = NULL;
 			return -4;		// Ошибка чтения строки из файла
 		}
-		//printf("Key: %lu, info: %s\n", key, info);
 		stat = insert(tree, key, info);
 		free(info);
 	} while (!feof(fptr));
 	printf("Tree - size: %lu\n", tree->size);
 	return 0;
 }
-
-// char *lower_case(char *word)
-// {
-// 	char *lower = (char *)calloc(strlen(word) + 1, sizeof(char));
-// 	for (size_t i = 0; i < strlen(word); ++i)
-// 	{
-// 		if (65 <= (int)word[i] && (int)word[i] <= 90)
-// 		{
-// 			int new = (int)word[i] + 32;
-// 			lower[i] = (char)new;
-// 		}
-// 		else
-// 			lower[i] = word[i];
-// 	}
-// 	return lower;
-// }
-
-// int is_letter(char s)
-// {
-// 	return (65 <= (int)s && (int)s <= 90) || (97 <= (int)s && (int)s <= 122) || (48 <= (int)s && (int)s <= 57);
-// }
-
-// int write_dop(Tree *tree, FILE *fptr)
-// {
-// 	if (tree->root == NULL)
-// 		return 0;
-// 	Node *ptr = first(tree);
-// 	while (ptr != NULL)
-// 	{
-// 		fprintf(fptr, "%s - %lu\n", ptr->key, ptr->info);
-// 		ptr = ptr->next;
-// 	}
-// 	return 0;
-// }
-
-// int dop(char *input_name, char *output_name, Tree *tree)
-// {
-// 	FILE *fptr = fopen(input_name, "r");
-// 	if (fptr == NULL)
-// 		return -6;		//Не удалось открыть файл
-	
-// 	do
-// 	{
-// 		char *line = txt_readline(fptr);
-// 		if (line == NULL)
-// 			break;
-		
-// 		int word_len = 0;
-// 		size_t line_len = strlen(line);
-// 		char word[line_len];
-		
-// 		for (size_t i = 0; i < line_len; ++i)
-// 		{
-// 			if (is_letter(line[i]) || (line[i] == '-' && word_len > 0))
-// 			{
-// 				word[word_len] = line[i];
-// 				word_len++;
-// 			}
-// 			else
-// 			{
-// 				if (word_len > 0)
-// 				{
-// 					word[word_len] = '\0';
-// 					char *lower = lower_case(word);
-// 					Node *found = find_key(tree, lower);
-// 					if (found != NULL)
-// 						found->info++;
-// 					else
-// 						insert(tree, lower, 1);
-// 					word_len = 0;
-// 					free(lower);
-// 				}
-// 			}
-// 		}
-// 		if (word_len > 0)
-// 		{
-// 			word[word_len] = '\0';
-// 			char *lower = lower_case(word);
-// 			Node *found = find_key(tree, lower);
-// 			if (found != NULL)
-// 				found->info++;
-// 			else
-// 				insert(tree, lower, 1);
-// 			free(lower);
-// 		}
-// 		free(line);
-// 	} while (!feof(fptr));
-// 	fclose(fptr);
-
-// 	FILE *fptr_w = fopen(output_name, "w");
-// 	if (fptr_w == NULL)
-// 		return -6;		//Не удалось открыть файл
-
-// 	write_dop(tree, fptr_w);
-// 	fclose(fptr_w);
-// 	return 0;
-// }
 
 int visual(Tree *tree, char *filename)
 {
@@ -670,8 +455,6 @@ int addNode(Node *ptr, Agraph_t *g)
 	char name[500];
 	sprintf(name, "<%lu>\n%s", ptr->key, s_arr);
 	free(s_arr);
-	// for (int i = 0; i < ptr->info_size; ++i)
-	// 	sprintf(name, "%s", (ptr->info_arr)[i]);
 	Agnode_t *g_ptr = agnode(g, name, 1);
 	
 	if (ptr->left != NULL)
@@ -680,8 +463,6 @@ int addNode(Node *ptr, Agraph_t *g)
 		char *l_s_arr = infos_in_str(ptr->left);
 		sprintf(l_name, "<%lu>\n%s", ptr->left->key, l_s_arr);
 		free(l_s_arr);
-		// for (int i = 0; i < ptr->left->info_size; ++i)
-		// 	sprintf(l_name, "%s", (ptr->left->info_arr)[i]);
 		Agnode_t *g_left = agnode(g, l_name, 1);
 		agedge(g, g_ptr, g_left, 0, 1);
 		addNode(ptr->left, g); 
@@ -692,8 +473,6 @@ int addNode(Node *ptr, Agraph_t *g)
 		char *r_s_arr = infos_in_str(ptr->right);
 		sprintf(r_name, "<%lu>\n%s", ptr->right->key, r_s_arr);
 		free(r_s_arr);
-		// for (int i = 0; i < ptr->right->info_size; ++i)
-		// 	sprintf(r_name, "%s", (ptr->right->info_arr)[i]);
 		Agnode_t *g_right = agnode(g, r_name, 1);
 		agedge(g, g_ptr, g_right, 0, 1);
 		addNode(ptr->right, g); 

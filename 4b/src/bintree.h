@@ -11,7 +11,6 @@ typedef struct Node
 	struct Node *right;
 	struct Node *parent;
 	int depth;
-	int size;
 } Node;
 
 typedef struct Tree
@@ -22,16 +21,6 @@ typedef struct Tree
 	double alpha;
 } Tree;
 
-typedef struct F_item
-{
-	Node *ptr;
-	struct F_item *next;
-} F_item;
-
-typedef struct F_nodes
-{
-	F_item *head;
-} F_nodes;
 
 Node *minimum(Node *);
 Node *maximum(Node *);
@@ -48,7 +37,6 @@ int output(Node *, char *, int, char *, char *);
 int clear(Node *);
 Tree *create(double);
 int import(FILE *, Tree *);
-//int dop(char *, char *, Tree *);
 int addNode(Node *, Agraph_t *);
 int visual(Tree *, char *);
 Node *scapegoat(Tree *, Node *);
