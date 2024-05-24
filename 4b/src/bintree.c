@@ -11,7 +11,7 @@
 Node *find_prev(Tree *, Node *);
 Node *rebalance(Node *);
 int store_inorder(Node *, Node **, int);
-Node *balanced_subtree(Node **, int, int, int, int);
+Node *balanced_subtree(Node **, int, int, int/*, int*/);
 int node_clear(Node *);
 int clear_info_array(Node *);
 int copy_info_array(Node *, Node *);
@@ -148,56 +148,13 @@ Node *find_parent(Tree *tree, const size_t key, int *depth)
 	return par;	
 }
 
-// int insert(Tree *tree, const char *key, const size_t info)
-// {
-// 	int depth = b_insert(tree, key, info);
-// 	if (depth > (log(tree->size) / log(1 / tree->alpha)))
-// 	{
-// 		Node *goat = scapegoat(tree, ptr);
-// 		rebuild(, goat);
-// 	}
-// 	return 0;
-// }
-
-// Node *flatten(Node *root, Node *head)
-// {
-// 	if (root == NULL)
-// 		return head;
-// 	root->right = flatten(root->right, head);
-// 	return flatten(root->left, root);
-// }
-
-// Node *build_tree(int size, Node *head)
-// {
-// 	if (size == 1)
-// 	{
-// 		head->left = NULL;
-// 		return head;
-// 	}
-// 	Node *r = build_tree((size - 1) / 2, head);
-// 	Node *s = build_tree((size - 1) / 2, head->right);
-// 	r->right = s->left;
-// 	s->left = r;
-// 	return s;
-// }
-
-// Node *rebuild(size_t size, Node *goat)
-// {
-// 	Node *head = flatten(goat, NULL);
-// 	build_tree(size, head);
-// 	while (head->parent != NULL)
-// 		head = head->parent
-// 	return head;
-// }
-
-
 Node *rebalance(Node *scapegoat)
 {
-	int goat_size = scapegoat->size;
-	//int goat_size = n_size(scapegoat);
+	//int goat_size = scapegoat->size;
+	int goat_size = n_size(scapegoat);
 	Node *inorder[goat_size];
 	store_inorder(scapegoat, inorder, 0);
-	Node *balanced = balanced_subtree(inorder, 0, goat_size - 1, scapegoat->depth, goat_size);
+	Node *balanced = balanced_subtree(inorder, 0, goat_size - 1, scapegoat->depth/*, goat_size*/);
 	return balanced;
 }
 
@@ -210,22 +167,22 @@ int store_inorder(Node *ptr, Node **arr, int index)
 	return store_inorder(ptr->right, arr, index);
 }
 
-Node *balanced_subtree(Node **inorder, int start, int end, int depth, int curr_size) 
+Node *balanced_subtree(Node **inorder, int start, int end, int depth/*, int curr_size*/) 
 {
 	if (start > end)
 		return NULL;
 	int mid = (start + end) / 2;
 	Node *ptr = inorder[mid];
-	ptr->left = balanced_subtree(inorder, start, mid - 1, depth + 1, curr_size / 2);
+	ptr->left = balanced_subtree(inorder, start, mid - 1, depth + 1/*, curr_size / 2*/);
 	if (ptr->left != NULL)
 		ptr->left->parent = ptr;
 	
-	ptr->right = balanced_subtree(inorder, mid + 1, end, depth + 1, curr_size / 2);
+	ptr->right = balanced_subtree(inorder, mid + 1, end, depth + 1/*, curr_size / 2*/);
 	if (ptr->right != NULL)
 		ptr->right->parent = ptr;
 	
 	ptr->depth = depth;
-	ptr->size = curr_size;
+	// ptr->size = curr_size;
 	return ptr;
 }
 
@@ -299,8 +256,8 @@ Node *b_insert(Tree *tree, const size_t key, const char *info)
 		new->parent = par;
 	}
 	new->depth = depth;
-	if (new != tree->root)
-		inc_sizes(new->parent);
+	// if (new != tree->root)
+	// 	inc_sizes(new->parent);
 	return new;
 }
 
@@ -331,13 +288,13 @@ Node *scapegoat(Tree *tree, Node *ptr)
 	{
 		if (ptr == par->right)
 			if (par->left != NULL)
-				sib_size = par->left->size;
+				sib_size = n_size(par->left)/*->size*/;
 			else
 				sib_size = 0;
 			//sib_size = n_size(par->left);
 		else
 			if (par->right != NULL)
-				sib_size = par->right->size;
+				sib_size = n_size(par->right)/*->size*/;
 			else
 				sib_size = 0;
 			//sib_size = n_size(par->right);
@@ -391,7 +348,7 @@ int b_delete(Tree *tree, const size_t del_key)
 	{
 		real_del = minimum(del_node->right);
 	}
-	dec_sizes(real_del->parent);
+	//dec_sizes(real_del->parent);
 	if (real_del->right != NULL)
 		subtree = real_del->right;
 	else
@@ -571,7 +528,7 @@ int import(FILE *fptr, Tree *tree)
 			tree->root = NULL;
 			return -5;		// Ошибка чтения числа из файла
 		}
-		printf("Key: %lu", key);
+		//printf("Key: %lu", key);
 		char *info = txt_readline(fptr);
 		if (info == NULL)
 		{
@@ -581,10 +538,11 @@ int import(FILE *fptr, Tree *tree)
 			tree->root = NULL;
 			return -4;		// Ошибка чтения строки из файла
 		}
-		printf("Key: %lu, info: %s\n", key, info);
+		//printf("Key: %lu, info: %s\n", key, info);
 		stat = insert(tree, key, info);
 		free(info);
 	} while (!feof(fptr));
+	printf("Tree - size: %lu\n", tree->size);
 	return 0;
 }
 

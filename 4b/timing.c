@@ -13,28 +13,28 @@ double find_time(Tree *tree);
 int main()
 {
 	srand(time(NULL));
-	double alpha = 0.7;
+	double alpha = 0.6;
 	Tree *tree = create(alpha);
 	double av_insert = 0.0, av_delete = 0.0, av_find = 0.0;
 	double res = 0.0;
-
-	FILE *fptr = fopen("insert.txt", "a");
+	printf("Node*: %lu\n", sizeof(Node*));
+	FILE *fptr = fopen("insert.txt", "w");
 	printf("Вставка\n");
-	for (int size = 1000; size < 10001; size += 1000)
+	for (int size = 100000; size < 5000001; size += 245000)
 	{
 		av_insert = 0.0;
 		printf("size >> %d\n", size);
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < 100; ++i)
 		{
 			set_tree(tree, size);
-			printf("Дерево сгенерировано\n");
+			//printf("Дерево сгенерировано\n");
 			res = insert_time(tree);
 			av_insert += res;
-			printf("insert-%d %lf\n", i+1, res);
+			printf("\tinsert-%d %lf\n", i+1, res);
 			clear(tree->root);
 			tree->root = NULL;
 		}
-		av_insert /= 10;
+		av_insert /= 100;
 		printf("\tВставка-%7d: %lf\n\n", size, av_insert);
 		fprintf(fptr, "%lf\n", av_insert);
 	}
@@ -42,12 +42,12 @@ int main()
 	printf("--------------\n");
 
 	printf("Удаление\n");
-	fptr = fopen("delete.txt", "a");
-	for (int size = 100000; size < 3000001; size += 145000)
+	fptr = fopen("delete.txt", "w");
+	for (int size = 100000; size < 5000001; size += 245000)
 	{
 		av_delete = 0.0;
 		//printf("size >> %d\n", size);
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < 100; ++i)
 		{
 			set_tree(tree, size);
 			res = del_time(tree);
@@ -56,7 +56,7 @@ int main()
 			clear(tree->root);
 			tree->root = NULL;
 		}
-		av_delete /= 10;
+		av_delete /= 100;
 		printf("Удаление-%7d: %lf\n", size, av_delete);
 		fprintf(fptr, "%lf\n", av_delete);
 	}
@@ -64,20 +64,20 @@ int main()
 	printf("--------------\n");
 
 	printf("Поиск\n");
-	fptr = fopen("find.txt", "a");
-	for (int size = 100000; size < 3000001; size += 145000)
+	fptr = fopen("find.txt", "w");
+	for (int size = 100000; size < 5000001; size += 245000)
 	{
 		av_find = 0.0;
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < 100; ++i)
 		{
 			set_tree(tree, size);
 			res = find_time(tree);
 			av_find += res;
-			printf("find-%d %lf\n", i+1, res);
+			printf("\tfind-%d %lf\n", i+1, res);
 			clear(tree->root);
 			tree->root = NULL;
 		}
-		av_find /= 10;
+		av_find /= 100;
 		printf("Поиск-%7d: %lf\n", size, av_find);
 		fprintf(fptr, "%lf\n", av_find);
 	}
@@ -118,7 +118,7 @@ double insert_time(Tree *tree)
 	struct timespec start, end;
 	for (int i = 0; i < 500; ++i)
 	{
-		size_t key = (size_t)(rand() % 100000);
+		size_t key = (size_t)(rand() % UINT_MAX);
 		char *info = calloc(2, sizeof(char));
 		info[0] = 'b';
 
@@ -137,7 +137,7 @@ double del_time(Tree *tree)
 	struct timespec start, end;
 	for (int i = 0; i < 500; ++i)
 	{
-		size_t key = (size_t)rand();
+		size_t key = (size_t)(rand() % UINT_MAX);
 		clock_gettime(CLOCK_REALTIME, &start);
 		delete(tree, key);
 		clock_gettime(CLOCK_REALTIME, &end);
@@ -153,7 +153,7 @@ double find_time(Tree *tree)
 	struct timespec start, end;
 	for (int i = 0; i < 500; ++i)
 	{
-		size_t key = (size_t)rand();
+		size_t key = (size_t)(rand() % UINT_MAX);
 
 		clock_gettime(CLOCK_REALTIME, &start);
 		find_key(tree, key);
