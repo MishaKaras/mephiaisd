@@ -571,7 +571,7 @@ int visual(Graph *graph, char *filename)
         stat = -8;      // Ошибка выделения памяти
     else
     {
-        gvLayout(gvc, g, "circo");
+        gvLayout(gvc, g, "dot");
         gvRenderFilename(gvc, g, "svg", filename);
     }
 	gvFreeLayout(gvc, g);
