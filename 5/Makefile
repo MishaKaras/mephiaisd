@@ -7,11 +7,11 @@ PREF_OBJ = ./obj/
 ifeq ($(LIB), stat)
 	TARGET = S_gr
 	LIBR = libgraph.a
-	LFLAGS = -lgraph -lreadline -lcgraph -lgvc -lm
+	LFLAGS = -lgraph -lreadline -lcgraph -lgvc
 else
 	TARGET = D_gr
 	LIBR = libgraph.so
-	LFLAGS = -lgraph -lreadline -Wl,-rpath,. -lcgraph -lgvc -lm
+	LFLAGS = -lgraph -lreadline -Wl,-rpath,. -lcgraph -lgvc
 endif
 
 SMAIN = $(PREF_SRC)main.c
@@ -28,9 +28,9 @@ endif
 
 $(PREF_OBJ)%.o : $(PREF_SRC)%.c
 ifeq ($(LIB), stat)
-	$(CC) -c $< -o $@ -g -Wall -Wextra -Werror -lcgraph -lgvc -lm
+	$(CC) -c $< -o $@ -g -Wall -Wextra -Werror -lcgraph -lgvc
 else
-	$(CC) -c $< -o $@ -fPIC -g -Wall -Wextra -Werror -lcgraph -lgvc -lm
+	$(CC) -c $< -o $@ -fPIC -g -Wall -Wextra -Werror -lcgraph -lgvc
 endif
 
 libgraph.a : $(OBJ)

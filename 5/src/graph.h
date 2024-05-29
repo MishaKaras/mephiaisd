@@ -24,7 +24,7 @@ typedef struct Node
     int color;
     
     int dist;
-    Node *prev;
+    struct Node *prev;
 } Node;
 
 typedef struct Graph
@@ -32,18 +32,6 @@ typedef struct Graph
     Node *first_node;
     int size;
 } Graph;
-
-typedef struct Item
-{   
-    Node *node;
-    struct Item *next;
-} Item;
-
-typedef struct Queue
-{
-    Item *head;
-    Item *tail;
-} Queue;
 
 Graph *create_graph();
 int add_node(Graph *, char *, size_t);
@@ -71,8 +59,4 @@ Node **Bellman_Ford(Graph *, char *, char *, int *);
 int ostov(Graph *);
 int visual(Graph *, char *);
 int paint_graph(Graph *, Agraph_t *);
-
-int push(Queue *, Node *);
-Node *pop(Queue *);
-int q_clear(Queue *);
 #endif

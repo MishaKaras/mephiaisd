@@ -60,7 +60,7 @@ int D_add_node(Graph *g)
 	return 0;
 }
 
-int D_add_adge(Graph *g)
+int D_add_edge(Graph *g)
 {
 	int stat = 0;
 	char *src_name = readline("Введите имя источника: ");
@@ -253,12 +253,63 @@ int D_BFS(Graph *g)
 	return 0;
 }
 
-// int D_graphviz(Tree *tree)
-// {
-// 	char *filename = readline("Введите название svg-файла для сохранения графа: ");
-// 	int stat = visual(tree, filename);
-// 	if (stat < 0)
-// 		errors(stat);
-// 	free(filename);
-// 	return 0;
-// }
+int D_B_F(Graph *g)
+{
+	int way_ln = 0;
+	char *start_name = readline("Введите имя источника: ");
+	if (start_name == NULL)
+		return -1;
+	char *end_name = readline("Введите имя цели: ");
+	if (end_name == NULL)
+	{
+		free(start_name);
+		return -1;
+	}
+
+	Node **way = Bellman_Ford(g, start_name, end_name, &way_ln);
+	if (way == NULL)
+	{
+		if (way_ln == -10)
+			printf("Невозможно установить связь %s -> %s\n", start_name, end_name);
+		else
+			errors(way_ln);
+	}
+	else
+	{
+		printf("Кратчайший путь: \n");
+		for (int i = way_ln - 1; i >= 0; --i)
+		{
+			Node *ptr = way[i];
+			printf("%s | %lu ", ptr->name, ptr->port);
+			if (i != 0)
+				printf("-> ");
+		}
+		printf("\n");
+		free(way);
+	}
+	free(start_name);
+	free(end_name);
+	return 0;
+}
+
+int D_ostov(Graph *g)
+{
+	int stat = ostov(g);
+	if (stat < 0)
+		errors(stat);
+	else
+		output_graph(g, 1);
+	return 0;
+}
+
+int D_graphviz(Graph *g)
+{
+	char *filename = readline("Введите имя svg-файла: ");
+	if (filename == NULL)
+		return -1;
+	int stat = visual(g, filename);
+	if (stat < 0)
+		errors(stat);
+	free(filename);
+	return 0;
+}

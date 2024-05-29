@@ -3,50 +3,55 @@
 #include <readline/readline.h>
 
 #include "inputfuncs.h"
-#include "bintree.h"
+#include "graph.h"
 #include "dialogs.h"
-
-#define EPS 0.00000001
 
 int dialog();
 
 int main()
 {	
 	int stat;
-	double alpha = 0.0;
-	char *s = "Введите коэффициент балансировки (в границах от 0.5 до 1): ";
-	do
-	{
-		printf("%s", s);
-		s = "Введите еще раз: ";
-		stat = get_double(&alpha);
-		if (stat == -1)
-			return stat;
-	} while (alpha > 1.0 || fabs(alpha - 1.0) < EPS || alpha < 0.5 || fabs(alpha - 0.5) < EPS);
+	
+	int (*fptr[])(Graph *) = {NULL, \
+	D_add_node, D_add_edge, \
+	D_del_node, D_del_edge, \
+	D_n_port_change, D_e_ports_change, \
+	D_output, \
+	D_BFS, D_B_F, D_ostov, \
+	D_graphviz};
 
-	int (*fptr[])(Tree *) = {NULL, D_insert, D_delete, D_find, D_spec_find, D_output, D_traverse, D_import, D_graphviz};
 	int type = dialog();
 	
-	Tree *tree = create(alpha);
+	Graph *g = create_graph();
 	while (type > 0)
 	{
-		stat = fptr[type](tree);
+		stat = fptr[type](g);
 		if (stat == -1)
 			break;
 		type = dialog();
 	}
 	printf("Окончание программы.\n");
-	if (tree->root != NULL)
-		clear(tree->root);
-	free(tree);
+	clear_graph(g);
 	return 0;
 }
 
 int dialog()
 {
-	char *msgs[] = {"0) Завершение;", "1) Вставка элемента;", "2) Удаление элемента;", "3) Поиск элемента;", "4) Спец. поиск;", "5) Вывод дерева;", "6) Обход дерева;", "7) Импорт из файла;", "8) Визуализация графа.", "9) Доп. задание."};
+	char *msgs[] = {"0) Завершение;", \
+	"1) Добавление компьютера;", \
+	"2) Добавление канала связи;", \
+	"3) Удаление компьютера;", \
+	"4) Удаление канала связи;", \
+	"5) Изменение порта подключения компьютера;", \
+	"6) Изменение списка доступных портов канала связи;", \
+	"7) Вывод сети;", \
+	"8) Поиск ближайшего компьютера с заданным портом (BFS);", \
+	"9) Поиск кратчайшего пути между заданными компьютерами (Беллман-Форд);", \
+	"10) Минимизация сетевых подключений (построение остова);", \
+	"11) Визуализация сети."};
+
 	printf("----------------\n");
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 12; ++i)
 		printf("%s\n", msgs[i]);
 	printf("----------------\n\n");
 	char *s = "Введите значение: ";
@@ -58,6 +63,6 @@ int dialog()
 		stat = get_int(&res);
 		if (stat == -1)
 			return stat;
-	} while (res > 8 || res < 0);
+	} while (res > 11 || res < 0);
 	return res;
 }

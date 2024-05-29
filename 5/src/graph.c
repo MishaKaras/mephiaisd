@@ -16,6 +16,7 @@ Graph *create_graph()
     Graph *new = (Graph *)calloc(1, sizeof(Graph));
     new->first_node = NULL;
     new->size = 0;
+    return new;
 }
 
 int add_node(Graph *g, char *name, size_t port)
@@ -37,6 +38,9 @@ int add_node(Graph *g, char *name, size_t port)
     new->port = port;
     new->first_edge = NULL;
     new->next = NULL;
+    new->color = 0;
+    new->dist = 0;
+    new->prev = NULL;
     if (prev != NULL)
         prev->next = new;
     else
@@ -154,7 +158,7 @@ int clear_edge(Edge *edge)
     if (edge == NULL)
         return 0;
 
-    edge->dest = NULL;
+    free(edge->dest);
     if (edge->ports != NULL)
         free(edge->ports);
     edge->next = NULL;
@@ -266,99 +270,21 @@ int output_graph(Graph *g, int is_ostov)
         e_ptr = ptr->first_edge;
         while (e_ptr != NULL)
         {
-            if (is_ostov == 0 || is_ostov == 1 && e_ptr->in_ostov == 1)
+            if (is_ostov == 0 || (is_ostov == 1 && e_ptr->in_ostov == 1))
             {
                 printf("\t-{ ");
                 for (int i = 0; i < e_ptr->ports_cnt; ++i)
-                    printf("%d ", e_ptr->ports[i]);
+                    printf("%lu ", e_ptr->ports[i]);
                 printf("}-> ");
                 Node *dst = find_node(g, e_ptr->dest);
                 printf("%7s | %lu\n", dst->name, dst->port);
-                e_ptr = e_ptr->next;
             }
+            e_ptr = e_ptr->next;
         }
         ptr = ptr->next;
     }
-    pritnf("\n");
+    printf("\n");
     return 0;
-}
-
-int push(Queue *q, Node *node)
-{
-    Item *new = (Item *)calloc(1, sizeof(Item));
-    new->node = node;
-    new->next = NULL;
-    if (q->tail != NULL)
-        q->tail->next = new;
-    else
-        q->head = new;
-    q->tail = new;        
-    return 0;
-}
-
-Node *pop(Queue *q)
-{
-    if (q->head == NULL)
-        return NULL;
-    Node *res = q->head->node;
-    Item *ptr = q->head;
-    if (q->head == q->tail)
-        q->tail = NULL;
-    q->head = q->head->next;
-    free(ptr);
-    return res;
-}
-
-int q_clear(Queue *q)
-{
-    while (pop(q) != NULL) ;
-    free(q);
-    return 0;
-}
-
-Node *BFS(Graph *g, char *start_name, size_t dest_port, int *stat)
-{
-    if (g == NULL)
-    {
-        *stat = -1;
-        return NULL;      // Не выделена память под граф
-    }
-    Queue *q = (Queue *)calloc(1, sizeof(Queue));
-    Node *ptr = g->first_node;
-    Edge *e_ptr = NULL;
-    while (ptr != NULL)     
-        ptr->color = 0;     // Инициализация
-    ptr = find_node(g, start_name);
-    if (ptr == NULL)
-    {
-        *stat = -3;
-        return NULL;      //Отсутствует вершина-источник
-    }
-    ptr->color = 1;
-    push(q, ptr);
-
-    while (q->head != NULL)
-    {
-        ptr = pop(q);
-        e_ptr = ptr->first_edge;
-        while (e_ptr != NULL)
-        {
-            Node *adj_node = find_node(g, e_ptr->dest);
-            if (adj_node->color == 0 && good_edge(dest_port, e_ptr))
-            {
-                if (adj_node->port == dest_port)
-                {
-                    q_clear(q);
-                    return adj_node;
-                }
-                adj_node->color = 1;
-                push(q, adj_node);
-            }
-            e_ptr = e_ptr->next; 
-        }
-    }
-    *stat = -10;
-    return NULL;
 }
 
 int in_arr(Node **arr, Node *curr, int arr_size)
@@ -381,7 +307,7 @@ int good_edge(size_t port, Edge *edge)
     return 0;
 }
 
-Node *BFS_arr(Graph *g, char *start_name, size_t dest_port, int *stat)
+Node *BFS(Graph *g, char *start_name, size_t dest_port, int *stat)
 {
     if (g == NULL)
     {
@@ -396,6 +322,7 @@ Node *BFS_arr(Graph *g, char *start_name, size_t dest_port, int *stat)
     if (ptr == NULL)
     {
         *stat =  -3;      //Отсутствует вершина-источник
+        free(arr);
         return NULL;
     }
     arr[curr_size++] = ptr;
@@ -432,15 +359,22 @@ Node *BFS_arr(Graph *g, char *start_name, size_t dest_port, int *stat)
 Node **Bellman_Ford(Graph *g, char *start_name, char *end_name, int *way_ln)
 {
     if (g == NULL)
-        return -1;      // Не выделена память под граф
-    
+    {
+        *way_ln = -1;
+        return NULL;      // Не выделена память под граф
+    }
     Node *start_node = find_node(g, start_name);
     Node *end_node = find_node(g, end_name);
     if (start_node == NULL)
-        return -3;      //Отсутствует вершина-источник
+    {
+        *way_ln = -3;
+        return NULL;      //Отсутствует вершина-источник
+    }
     if (end_node == NULL)
-        return -4;      //Отсутствует вершина-цель
-
+    {
+        *way_ln = -4;
+        return NULL;      //Отсутствует вершина-цель
+    }
     size_t dest_port = end_node->port;
     Node *ptr = g->first_node;
     Edge *e_ptr = NULL;
@@ -449,6 +383,7 @@ Node **Bellman_Ford(Graph *g, char *start_name, char *end_name, int *way_ln)
     {
         ptr->dist = INT_MAX;
         ptr->prev = NULL;
+        ptr = ptr->next;
     }
     start_node->dist = 0;
 
@@ -481,12 +416,9 @@ Node **Bellman_Ford(Graph *g, char *start_name, char *end_name, int *way_ln)
         }
     }
 
-    // if (end_node->prev == NULL)
-    //     return NULL;
-
     Node **way = (Node **)calloc(g->size, sizeof(Node *));
     *way_ln = 0;
-    Node *ptr = end_node;
+    ptr = end_node;
     while (ptr != NULL)
     {
         way[(*way_ln)++] = ptr;
@@ -494,6 +426,7 @@ Node **Bellman_Ford(Graph *g, char *start_name, char *end_name, int *way_ln)
     }
     if (way[(*way_ln) - 1] != start_node)
     {
+        *way_ln = -10;
         free(way);
         return NULL;
     }
@@ -503,6 +436,7 @@ Node **Bellman_Ford(Graph *g, char *start_name, char *end_name, int *way_ln)
         if (new_way == NULL)
         {
             free(way);
+            *way_ln = -8;
             return NULL;
         }
         way = new_way;
@@ -510,12 +444,35 @@ Node **Bellman_Ford(Graph *g, char *start_name, char *end_name, int *way_ln)
     return way;
 }
 
+int is_root(Graph *g, Node *node)
+{
+    if (node->first_edge == 0)
+        return 0;
+    Node *ptr = g->first_node;
+    Edge *e_ptr = NULL;
+    while (ptr != NULL)
+    {
+        if (ptr != node)
+        {
+            e_ptr = ptr->first_edge;
+            while (e_ptr != NULL)
+            {
+                if (strcmp(e_ptr->dest, node->name) == 0)
+                    return 0;
+                e_ptr = e_ptr->next;
+            }
+        }
+        ptr = ptr->next;
+    }
+    
+    return 1;
+}
+
 int ostov(Graph *g)
 {
     if (g == NULL)
-        return NULL;      // Не выделена память под граф
+        return -1;      // Не выделена память под граф
 
-    //Graph *res = (Graph *)calloc(1, sizeof(Graph));
     Node *ptr = g->first_node;
     Edge *e_ptr = NULL;
     while (ptr != NULL)
@@ -523,34 +480,79 @@ int ostov(Graph *g)
         e_ptr = ptr->first_edge;
         while (e_ptr != NULL)
         {
-            e_ptr->in_ostov = 0;
+            e_ptr->in_ostov = 0;        // Инициализация
             e_ptr = e_ptr->next;
         }
         ptr = ptr->next;
     }
 
-    //Edge **ostov_edges = NULL;
     Node **arr = (Node **)calloc(g->size, sizeof(Node *));
     int curr_size = 1;
     int arr_ptr = 0;
     ptr = g->first_node;
+    while (ptr != NULL && is_root(g, ptr) == 0)
+        ptr = ptr->next;
+    if (ptr == NULL)
+        ptr = g->first_node;
+
     arr[0] = ptr;
-    while (curr_size < g->size && ptr != NULL)
+    while (curr_size <= g->size && ptr != NULL)
     {
+        printf("Текущая вершина: %s\n", ptr->name);
         e_ptr = ptr->first_edge;
         while (e_ptr != NULL)
         {
             Node *adj_node = find_node(g, e_ptr->dest);
-            if (in_arr(arr, adj_node, curr_size) || !good_edge(adj_node->port, e_ptr))
+            if ((in_arr(arr, adj_node, curr_size) && is_root(g, ptr) == 0) || !good_edge(adj_node->port, e_ptr))
             {    
                 e_ptr = e_ptr->next;    
                 continue;
             }
             e_ptr->in_ostov = 1;
-            arr[curr_size++] = adj_node;
+            if (in_arr(arr, adj_node, curr_size) == 0)
+            {
+                arr[curr_size++] = adj_node;
+                printf("Вершина %s добавлена в массив\n", adj_node->name);
+            }
             e_ptr = e_ptr->next;
         }
-        ptr = arr[++arr_ptr];
+        int cnt = 1;
+        if (ptr->next != NULL)
+            ptr = ptr->next;
+        else
+            ptr = g->first_node;
+        while (cnt < g->size && \
+        (is_root(g, ptr) == 0 || \
+        (is_root(g, ptr) == 1 && in_arr(arr, ptr, curr_size) == 1)))
+        {
+            if (ptr->next != NULL)
+                ptr = ptr->next;
+            else
+                ptr = g->first_node;
+            ++cnt;
+        }
+        if (cnt == g->size)
+        {
+            if (arr_ptr == g->size - 1)
+                break;
+            ptr = arr[++arr_ptr];
+        }
+        if (ptr == NULL && arr_ptr < g->size)
+        {
+            ptr = g->first_node;
+            while (ptr != NULL && (in_arr(arr, ptr, curr_size) == 1 || \
+            (in_arr(arr, ptr, curr_size) == 0 && is_root(g, ptr) == 0)))
+                ptr = ptr->next;
+
+            if (ptr == NULL)
+            {
+                 ptr = g->first_node;
+                while (ptr != NULL && in_arr(arr, ptr, curr_size) == 1)
+                    ptr = ptr->next;
+            }
+        }
+        if (in_arr(arr, ptr, curr_size) == 0)
+            arr[curr_size++] = ptr;
     }
     free(arr);
     return 0;
@@ -564,31 +566,19 @@ int visual(Graph *graph, char *filename)
 	
 	GVC_t *gvc = gvContext();
 	Agraph_t *g = agopen("BST", Agdirected, 0);
-	int stat = paint_graph_1(graph, g);
+	int stat = paint_graph(graph, g);
     if (stat == -1)
-        return -8;      // Ошибка выделения памяти
-
-	gvLayout(gvc, g, "dot");
-	gvRenderFilename(gvc, g, "svg", filename);
-	
+        stat = -8;      // Ошибка выделения памяти
+    else
+    {
+        gvLayout(gvc, g, "circo");
+        gvRenderFilename(gvc, g, "svg", filename);
+    }
 	gvFreeLayout(gvc, g);
 	agclose(g);
 	gvFreeContext(gvc);
-	return 0;
+	return stat;
 }
-
-// int addNodes(Graph *graph, Agraph_t *g)
-// {
-//     Node *ptr = graph->first_node;
-//     char name[500];
-//     while (ptr != NULL)
-//     {
-//         sprintf(name, "%s\n%lu", ptr->name, ptr->port);
-//         Agnode_t *g_ptr = agnode(g, name, 1);
-//         ptr = ptr->next;
-//     }
-//     return 0;
-// }
 
 int paint_graph(Graph *graph, Agraph_t *g)
 {
@@ -626,8 +616,7 @@ int paint_graph(Graph *graph, Agraph_t *g)
 char *write_ports(size_t *ports, int ports_cnt)
 {
     char *res = calloc(500, sizeof(char));
-    res[0] = "{";
-    int res_ln = 0;
+    res[0] = '{';
     for (int i = 0; i < ports_cnt; ++i)
     {
         char port_str[50];
@@ -638,7 +627,7 @@ char *write_ports(size_t *ports, int ports_cnt)
             strcat(res, ", "); 
         }
     }
-    res[strlen(res)] = "}";
+    res[strlen(res)] = '}';
     char *res1 = realloc(res, (strlen(res) + 1) * sizeof(char));
     if (res1 == NULL)
     {
@@ -648,37 +637,3 @@ char *write_ports(size_t *ports, int ports_cnt)
     res = res1;
     return res;
 }
-
-// int addNode(Node *ptr, Agraph_t *g)
-// {
-// 	if (ptr == NULL)
-// 		return 0;
-	
-// 	char *s_arr = infos_in_str(ptr);
-// 	char name[500];
-// 	sprintf(name, "<%lu>\n%s", ptr->key, s_arr);
-// 	free(s_arr);
-// 	Agnode_t *g_ptr = agnode(g, name, 1);
-	
-// 	if (ptr->left != NULL)
-// 	{
-// 		char l_name[500];
-// 		char *l_s_arr = infos_in_str(ptr->left);
-// 		sprintf(l_name, "<%lu>\n%s", ptr->left->key, l_s_arr);
-// 		free(l_s_arr);
-// 		Agnode_t *g_left = agnode(g, l_name, 1);
-// 		agedge(g, g_ptr, g_left, 0, 1);
-// 		addNode(ptr->left, g); 
-// 	}
-// 	if (ptr->right != NULL)
-// 	{
-// 		char r_name[500];
-// 		char *r_s_arr = infos_in_str(ptr->right);
-// 		sprintf(r_name, "<%lu>\n%s", ptr->right->key, r_s_arr);
-// 		free(r_s_arr);
-// 		Agnode_t *g_right = agnode(g, r_name, 1);
-// 		agedge(g, g_ptr, g_right, 0, 1);
-// 		addNode(ptr->right, g); 
-// 	}
-// 	return 0;
-// }
