@@ -498,7 +498,6 @@ int ostov(Graph *g)
     arr[0] = ptr;
     while (curr_size <= g->size && ptr != NULL)
     {
-        printf("Текущая вершина: %s\n", ptr->name);
         e_ptr = ptr->first_edge;
         while (e_ptr != NULL)
         {
@@ -510,10 +509,7 @@ int ostov(Graph *g)
             }
             e_ptr->in_ostov = 1;
             if (in_arr(arr, adj_node, curr_size) == 0)
-            {
                 arr[curr_size++] = adj_node;
-                printf("Вершина %s добавлена в массив\n", adj_node->name);
-            }
             e_ptr = e_ptr->next;
         }
         int cnt = 1;
