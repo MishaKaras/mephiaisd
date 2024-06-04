@@ -53,10 +53,10 @@ int e_ports_change(Graph *, char *, char *, size_t *, int);
 int output_graph(Graph *, int);
 
 Node *BFS(Graph *, char *, size_t, int *);
-Node *BFS_arr(Graph *, char *, size_t, int *);
 
 Node **Bellman_Ford(Graph *, char *, char *, int *);
-int ostov(Graph *);
+int ostov(Graph *, size_t);
+
 int visual(Graph *, char *);
 int paint_graph(Graph *, Agraph_t *);
 #endif

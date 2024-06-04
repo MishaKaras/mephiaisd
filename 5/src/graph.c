@@ -468,13 +468,15 @@ int is_root(Graph *g, Node *node)
     return 1;
 }
 
-int ostov(Graph *g)
+int ostov(Graph *g, size_t o_port)
 {
     if (g == NULL)
         return -1;      // Не выделена память под граф
 
     Node *ptr = g->first_node;
     Edge *e_ptr = NULL;
+    Node **arr = (Node **)calloc(g->size, sizeof(Node *));
+    int curr_arr_size = 0;
     while (ptr != NULL)
     {
         e_ptr = ptr->first_edge;
@@ -483,77 +485,47 @@ int ostov(Graph *g)
             e_ptr->in_ostov = 0;        // Инициализация
             e_ptr = e_ptr->next;
         }
+        if (ptr->port == o_port)
+            arr[curr_arr_size++] = ptr;
         ptr = ptr->next;
     }
-
-    Node **arr = (Node **)calloc(g->size, sizeof(Node *));
-    int curr_size = 1;
-    int arr_ptr = 0;
-    ptr = g->first_node;
-    while (ptr != NULL && is_root(g, ptr) == 0)
-        ptr = ptr->next;
-    if (ptr == NULL)
-        ptr = g->first_node;
-
-    arr[0] = ptr;
-    while (curr_size <= g->size && ptr != NULL)
+    if (curr_arr_size == 0)
     {
-        e_ptr = ptr->first_edge;
-        while (e_ptr != NULL)
+        free(arr);
+        return -9;
+    }
+    arr = (Node **)realloc(arr, curr_arr_size * sizeof(Node *));
+    ptr = g->first_node;
+    int way_ln = 0;
+    Node **way = NULL;
+    while (ptr != NULL)
+    {
+        if (ptr->port == o_port)
         {
-            Node *adj_node = find_node(g, e_ptr->dest);
-            if ((in_arr(arr, adj_node, curr_size) && is_root(g, ptr) == 0) || !good_edge(adj_node->port, e_ptr))
-            {    
-                e_ptr = e_ptr->next;    
-                continue;
-            }
-            e_ptr->in_ostov = 1;
-            if (in_arr(arr, adj_node, curr_size) == 0)
-                arr[curr_size++] = adj_node;
-            e_ptr = e_ptr->next;
-        }
-        int cnt = 1;
-        if (ptr->next != NULL)
             ptr = ptr->next;
-        else
-            ptr = g->first_node;
-        while (cnt < g->size && \
-        (is_root(g, ptr) == 0 || \
-        (is_root(g, ptr) == 1 && in_arr(arr, ptr, curr_size) == 1)))
-        {
-            if (ptr->next != NULL)
-                ptr = ptr->next;
-            else
-                ptr = g->first_node;
-            ++cnt;
+            continue;
         }
-        if (cnt == g->size)
+        for (int i = 0; i < curr_arr_size; ++i)
         {
-            if (arr_ptr == g->size - 1)
-                break;
-            ptr = arr[++arr_ptr];
-        }
-        if (ptr == NULL && arr_ptr < g->size)
-        {
-            ptr = g->first_node;
-            while (ptr != NULL && (in_arr(arr, ptr, curr_size) == 1 || \
-            (in_arr(arr, ptr, curr_size) == 0 && is_root(g, ptr) == 0)))
-                ptr = ptr->next;
+            way = Bellman_Ford(g, ptr->name, arr[i]->name, &way_ln);
 
-            if (ptr == NULL)
+            if (way != NULL)
             {
-                 ptr = g->first_node;
-                while (ptr != NULL && in_arr(arr, ptr, curr_size) == 1)
-                    ptr = ptr->next;
+                for (int j = way_ln - 1; j > 0; --j)
+                {
+                    e_ptr = way[j]->first_edge;
+                    while (strcmp(e_ptr->dest, way[j-1]->name) != 0)
+                        e_ptr = e_ptr->next;
+                    e_ptr->in_ostov = 1;
+                }
+                free(way);
             }
         }
-        if (in_arr(arr, ptr, curr_size) == 0)
-            arr[curr_size++] = ptr;
+        ptr = ptr->next;
     }
     free(arr);
     return 0;
 }
-
 
 int visual(Graph *graph, char *filename)
 {

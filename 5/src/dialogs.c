@@ -32,7 +32,10 @@ void errors(int stat)
 			printf("Ошибка. Ребро не найдено.\n");
 			break;
 		case -8:
-			printf("Ошибкавыделения памяти.\n");
+			printf("Ошибка выделения памяти.\n");
+			break;
+		case -9:
+			printf("Ошибка. Отсутствует введенный порт.\n");
 			break;
 	}
 }
@@ -294,7 +297,12 @@ int D_B_F(Graph *g)
 
 int D_ostov(Graph *g)
 {
-	int stat = ostov(g);
+	size_t o_port = 0;
+	printf("Введите порт для построения остова: ");
+	int stat = get_len(&o_port);
+	if (stat == -1)
+		return -1; 
+	stat = ostov(g, o_port);
 	if (stat < 0)
 		errors(stat);
 	else
